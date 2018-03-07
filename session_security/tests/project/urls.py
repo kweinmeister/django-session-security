@@ -1,7 +1,9 @@
 import time
 
 from django.conf.urls import include, url
-from django import get_version
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ImproperlyConfigured
+from django.views import generic
 
 try:
     from django.conf.urls import patterns
@@ -12,9 +14,6 @@ except ImportError:
 from django.contrib import admin
 admin.autodiscover()
 
-from django.contrib.auth.decorators import login_required
-from django.views import generic
-
 
 class SleepView(generic.TemplateView):
     def get(self, request, *args, **kwargs):
@@ -22,11 +21,16 @@ class SleepView(generic.TemplateView):
         return super(SleepView, self).get(request, *args, **kwargs)
 
 
+try:
+    admin_site_urls = include(admin.site.urls)
+except ImproperlyConfigured:
+    admin_site_urls = admin.site.urls
+
 urlpatterns = [
     url(r'^$', generic.TemplateView.as_view(template_name='home.html')),
     url(r'^sleep/$', login_required(
         SleepView.as_view(template_name='home.html')), name='sleep'),
-    url(r'^admin/', admin.site.urls if float(get_version()) >= 1.11 else include(admin.site.urls)),
+    url(r'^admin/', admin_site_urls),
     url(r'session_security/', include('session_security.urls')),
     url(r'^ignore/$', login_required(
         generic.TemplateView.as_view(template_name='home.html')), name='ignore'),
